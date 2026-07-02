@@ -2,7 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   distDir: "build",
+  output: "standalone",
   allowedDevOrigins: ["*"],
+
   async rewrites() {
     return [
       {
