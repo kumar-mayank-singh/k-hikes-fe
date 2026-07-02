@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+const backendUrl =
+  process.env.BACKEND_URL ??
+  "https://karnataka-hikes-abggffgrdchshrem.southindia-01.azurewebsites.net";
+
 const nextConfig: NextConfig = {
   distDir: "build",
   output: "standalone",
@@ -9,12 +13,11 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination:
-          "https://karnataka-hikes-abggffgrdchshrem.southindia-01.azurewebsites.net/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
       },
       {
         source: "/uploads/:path*",
-        destination: "http://0.0.0.0:3001/uploads/:path*",
+        destination: `${backendUrl}/uploads/:path*`,
       },
     ];
   },
