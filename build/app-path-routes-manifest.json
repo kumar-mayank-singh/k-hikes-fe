@@ -1,0 +1,18 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/about-us/page": "/about-us",
+  "/admin/bookings/page": "/admin/bookings",
+  "/admin/categories/page": "/admin/categories",
+  "/admin/coupons/page": "/admin/coupons",
+  "/admin/events/[event_id]/page": "/admin/events/[event_id]",
+  "/admin/events/page": "/admin/events",
+  "/admin/leads/page": "/admin/leads",
+  "/admin/page": "/admin",
+  "/auth/page": "/auth",
+  "/bookings/[booking_id]/form/page": "/bookings/[booking_id]/form",
+  "/contact-us/page": "/contact-us",
+  "/events/[event_id]/booking/confirmation/page": "/events/[event_id]/booking/confirmation",
+  "/events/[event_id]/page": "/events/[event_id]",
+  "/page": "/"
+}
