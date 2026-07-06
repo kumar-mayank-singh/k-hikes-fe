@@ -3,7 +3,11 @@
 import { useMemo, useRef, useState } from "react";
 import { Check, ImagePlus, Pencil, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formToPayload, type EventEditForm } from "@/lib/event-edit-form";
+import {
+  diffEventPayload,
+  eventToForm,
+  type EventEditForm,
+} from "@/lib/event-edit-form";
 import {
   useGetBatches,
   useGetEventDetail,
@@ -151,8 +155,18 @@ export function EventEditPricingSection({
 
   if (!event) return null;
 
+  // GST is mutually exclusive with the CGST + SGST split: populate one side, not both.
+  const gstFilled = (parseFloat(form.gst_percent) || 0) > 0;
+  const cgstFilled = (parseFloat(form.cgst_percent) || 0) > 0;
+  const sgstFilled = (parseFloat(form.sgst_percent) || 0) > 0;
+  const taxError =
+    gstFilled && (cgstFilled || sgstFilled)
+      ? "Use either GST % or CGST % + SGST % — not both."
+      : null;
+
   const handleSavePricing = (): void => {
-    updateEvent.mutate(formToPayload(form), {
+    if (taxError) return;
+    updateEvent.mutate(diffEventPayload(eventToForm(event), form), {
       onSuccess: () => setIsEditingPricing(false),
     });
   };
@@ -266,23 +280,43 @@ export function EventEditPricingSection({
               </div>
               <div>
                 <label className={LABEL_CLS}>GST %</label>
-                <input type="number" step="0.01" {...bind("gst_percent")} className={INPUT_CLS} />
+                <input
+                  type="number"
+                  step="1"
+                  {...bind("gst_percent")}
+                  className={cn(INPUT_CLS, taxError && gstFilled && "border-red-400")}
+                />
               </div>
               <div>
                 <label className={LABEL_CLS}>CGST %</label>
-                <input type="number" step="0.01" {...bind("cgst_percent")} className={INPUT_CLS} />
+                <input
+                  type="number"
+                  step="1"
+                  {...bind("cgst_percent")}
+                  className={cn(INPUT_CLS, taxError && cgstFilled && "border-red-400")}
+                />
               </div>
               <div>
                 <label className={LABEL_CLS}>SGST %</label>
-                <input type="number" step="0.01" {...bind("sgst_percent")} className={INPUT_CLS} />
+                <input
+                  type="number"
+                  step="1"
+                  {...bind("sgst_percent")}
+                  className={cn(INPUT_CLS, taxError && sgstFilled && "border-red-400")}
+                />
               </div>
             </div>
+            {taxError && (
+              <p className="mt-2 text-sm text-red-600" role="alert">
+                {taxError}
+              </p>
+            )}
             <div className="flex gap-2 mt-4">
               <button
                 type="button"
                 onClick={handleSavePricing}
-                disabled={updateEvent.isPending}
-                className="px-4 py-2 bg-green-700 hover:bg-green-800 text-white rounded-lg text-sm"
+                disabled={updateEvent.isPending || taxError !== null}
+                className="px-4 py-2 bg-green-700 hover:bg-green-800 text-white rounded-lg text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {updateEvent.isPending ? "Saving…" : "Save"}
               </button>

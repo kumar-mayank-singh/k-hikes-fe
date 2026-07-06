@@ -77,3 +77,35 @@ export function formToPayload(f: EventEditForm): UpdateEventPayload {
 
   return payload;
 }
+
+/** Fields the API expects on every PATCH, even when unchanged. */
+const REQUIRED_UPDATE_FIELDS: readonly string[] = ["name"];
+
+function valuesEqual(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+  }
+  return a === b;
+}
+
+/**
+ * PATCH payload with only the fields that changed vs. the original event.
+ * Required fields are always included. Media fields (cover_image_id,
+ * pdf_file_id, other_photos) are layered on by the caller once uploads
+ * resolve, since their new ids aren't reflected in the form state.
+ */
+export function diffEventPayload(
+  original: EventEditForm,
+  current: EventEditForm,
+): UpdateEventPayload {
+  const base = formToPayload(original);
+  const next = formToPayload(current);
+
+  const changed = Object.entries(next).filter(
+    ([key, value]) =>
+      REQUIRED_UPDATE_FIELDS.includes(key) ||
+      !valuesEqual(value, base[key as keyof UpdateEventPayload]),
+  );
+
+  return Object.fromEntries(changed) as UpdateEventPayload;
+}

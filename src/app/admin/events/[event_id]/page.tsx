@@ -16,7 +16,7 @@ import {
 import { eventOtherPhotoFileIds } from "@/lib/event-photos";
 import {
   eventToForm,
-  formToPayload,
+  diffEventPayload,
   type EventEditForm,
 } from "@/lib/event-edit-form";
 import { EventEditDetailsSection } from "@/components/sections/event-edit-details-section";
@@ -87,7 +87,7 @@ export default function EventEditPage() {
   const handleSaveDetails = async (): Promise<void> => {
     if (!event) return;
     try {
-      const payload = formToPayload(form);
+      const payload = diffEventPayload(eventToForm(event), form);
 
       if (coverImageFile) {
         const uploaded = await uploadFile.mutateAsync(coverImageFile);
@@ -99,27 +99,33 @@ export default function EventEditPage() {
         payload.pdf_file_id = uploaded.id;
       }
 
-      for (const fileId of removedOtherPhotoIds) {
-        await deleteUploadedFile.mutateAsync(fileId);
+      const galleryChanged =
+        pendingOtherPhotos.length > 0 || removedOtherPhotoIds.length > 0;
+      let finalOtherPhotos = otherPhotoIds;
+
+      if (galleryChanged) {
+        for (const fileId of removedOtherPhotoIds) {
+          await deleteUploadedFile.mutateAsync(fileId);
+        }
+        const uploadedPhotos = await uploadFiles.mutateAsync(pendingOtherPhotos);
+        const keptOtherPhotoIds = otherPhotoIds.filter(
+          (id) => !removedOtherPhotoIds.includes(id),
+        );
+        finalOtherPhotos = [
+          ...keptOtherPhotoIds,
+          ...uploadedPhotos.map((u) => u.id),
+        ];
+        payload.other_photos =
+          finalOtherPhotos.length > 0 ? finalOtherPhotos : null;
       }
-
-      const uploadedPhotos = await uploadFiles.mutateAsync(pendingOtherPhotos);
-      const newOtherPhotoIds = uploadedPhotos.map((u) => u.id);
-
-      const keptOtherPhotoIds = otherPhotoIds.filter(
-        (id) => !removedOtherPhotoIds.includes(id),
-      );
-      const finalOtherPhotos = [...keptOtherPhotoIds, ...newOtherPhotoIds];
-      payload.other_photos =
-        finalOtherPhotos.length > 0 ? finalOtherPhotos : null;
 
       await updateEvent.mutateAsync(payload);
 
-      if (coverImageFile && payload.cover_image_id) {
+      if (payload.cover_image_id) {
         setCurrentCoverImageId(payload.cover_image_id);
         setCoverImageFile(null);
       }
-      if (itineraryFile && payload.pdf_file_id) {
+      if (payload.pdf_file_id) {
         setCurrentItineraryFileId(payload.pdf_file_id);
         setItineraryFile(null);
       }
