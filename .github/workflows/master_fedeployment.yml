@@ -35,11 +35,17 @@ jobs:
 
       - name: Prepare deployment package
         run: |
+          if [ ! -d build/standalone ]; then
+            echo "build/standalone not found. Ensure next.config.ts has output: 'standalone'."
+            ls -la build || true
+            exit 1
+          fi
+
           mkdir deploy
           cp package.json deploy/
           cp package-lock.json deploy/
           cp -R public deploy/public
-          cp -R build/standalone/* deploy/
+          cp -R build/standalone/. deploy/
           mkdir -p deploy/build
           cp -R build/static deploy/build/static
 
