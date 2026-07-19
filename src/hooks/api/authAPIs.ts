@@ -531,6 +531,11 @@ export const adminEventPriceOptionKeys = {
     ["admin", "events", eventId, "price-options"] as const,
 };
 
+export const adminBatchPriceOptionKeys = {
+  all: (batchId: string) =>
+    ["admin", "batches", batchId, "price-options"] as const,
+};
+
 export function useGetAdminEventPriceOptions(eventId: string) {
   return useQuery({
     queryKey: adminEventPriceOptionKeys.all(eventId),
@@ -542,6 +547,22 @@ export function useGetAdminEventPriceOptions(eventId: string) {
     },
     select: (data) => data.items ?? [],
     enabled: !!eventId,
+    retry: false,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useGetAdminBatchPriceOptions(batchId: string) {
+  return useQuery({
+    queryKey: adminBatchPriceOptionKeys.all(batchId),
+    queryFn: async (): Promise<PriceOptionsListResponse> => {
+      const res = await authApi.get<PriceOptionsListResponse>(
+        `/api/admin/batches/${batchId}/price-options`,
+      );
+      return res.data;
+    },
+    select: (data) => data.items ?? [],
+    enabled: !!batchId,
     retry: false,
     staleTime: 2 * 60 * 1000,
   });
@@ -797,6 +818,14 @@ export function useEventSubResource<TPayload = Record<string, unknown>>(
   const queryClient = useQueryClient();
   const invalidate = (): void => {
     queryClient.invalidateQueries({ queryKey: eventKeys.detail(eventId) });
+    if (path === "price-options") {
+      queryClient.invalidateQueries({
+        queryKey: adminEventPriceOptionKeys.all(eventId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "batches"],
+      });
+    }
   };
 
   const add = useMutation({
@@ -852,23 +881,33 @@ export function useGetAdminBookings(params: AdminBookingsListParams) {
   return useQuery({
     queryKey: bookingKeys.list(params),
     queryFn: async (): Promise<AdminBookingsPaginatedResponse> => {
-      const queryParams: Record<string, string | number> = {
+      const queryParams: Record<string, string | number | string[]> = {
         page: params.page,
         per_page: params.per_page,
       };
-      if (params.event_id?.trim()) {
-        queryParams.event_id = params.event_id.trim();
+      const eventIds = (params.event_ids ?? [])
+        .map((id) => id.trim())
+        .filter(Boolean);
+      if (eventIds.length > 0) {
+        queryParams.event_ids = eventIds;
       }
       if (params.status?.trim()) {
         queryParams.status = params.status.trim();
       }
-      if (params.batch_id?.trim()) {
-        queryParams.batch_id = params.batch_id.trim();
+      const batchIds = (params.batch_ids ?? [])
+        .map((id) => id.trim())
+        .filter(Boolean);
+      if (batchIds.length > 0) {
+        queryParams.batch_ids = batchIds;
       }
 
       const res = await authApi.get<AdminBookingsPaginatedResponse>(
         "/api/admin/bookings",
-        { params: queryParams },
+        {
+          params: queryParams,
+          // FastAPI list query: event_ids=a&event_ids=b
+          paramsSerializer: { indexes: null },
+        },
       );
       return res.data;
     },

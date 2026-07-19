@@ -23,7 +23,7 @@ export function DepartureStep({
   const pickupPointId = useBookingWizardStore((s) => s.pickupPointId);
   const update = useBookingWizardStore((s) => s.update);
   const next = useBookingWizardStore((s) => s.next);
-  const prev = useBookingWizardStore((s) => s.prev);
+  const close = useBookingWizardStore((s) => s.close);
 
   const { data: batches = [], isLoading: batchesLoading } =
     useGetPublicEventBatches(event.event_id);
@@ -70,8 +70,8 @@ export function DepartureStep({
       </StepField>
 
       <div className="flex items-center justify-between pt-2">
-        <Button type="button" variant="outline" onClick={prev}>
-          Back
+        <Button type="button" variant="outline" onClick={close}>
+          Cancel
         </Button>
         <Button
           type="button"

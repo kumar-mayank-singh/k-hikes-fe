@@ -92,15 +92,12 @@ export function EventEditDetailsSection({
             className={INPUT_CLS}
             placeholder="Lower numbers appear first"
           />
-          <p className="mt-1 text-xs text-gray-500">
-            Controls listing order. Lower values appear first.
-          </p>
         </div>
       </div>
 
       <div>
         <label className={LABEL_CLS}>Description</label>
-        <textarea rows={4} {...bind("description")} className={INPUT_CLS} />
+        <textarea rows={4} {...bind("description")} className={cn(INPUT_CLS, "wrap-break-word")} />
       </div>
 
       <EventOtherPhotosField
@@ -177,22 +174,22 @@ export function EventEditDetailsSection({
         </div>
         <div>
           <label className={LABEL_CLS}>Inclusions</label>
-          <textarea rows={4} {...bind("inclusions")} className={INPUT_CLS} />
+          <textarea rows={4} {...bind("inclusions")} className={cn(INPUT_CLS, "wrap-break-word")} />
         </div>
         <div>
           <label className={LABEL_CLS}>Exclusions</label>
-          <textarea rows={4} {...bind("exclusions")} className={INPUT_CLS} />
+          <textarea rows={4} {...bind("exclusions")} className={cn(INPUT_CLS, "wrap-break-word")} />
         </div>
         <div>
           <label className={LABEL_CLS}>Terms & Conditions</label>
-          <textarea rows={4} {...bind("policy")} className={INPUT_CLS} />
+          <textarea rows={4} {...bind("policy")} className={cn(INPUT_CLS, "wrap-break-word")} />
         </div>
         <div>
           <label className={LABEL_CLS}>Things to Carry</label>
           <textarea
             rows={4}
             {...bind("things_to_carry")}
-            className={INPUT_CLS}
+            className={cn(INPUT_CLS, "wrap-break-word")}
           />
         </div>
       </div>

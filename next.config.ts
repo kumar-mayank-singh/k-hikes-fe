@@ -6,7 +6,6 @@ const backendUrl =
 
 const nextConfig: NextConfig = {
   distDir: "build",
-  output: "standalone",
   allowedDevOrigins: ["*"],
 
   async rewrites() {

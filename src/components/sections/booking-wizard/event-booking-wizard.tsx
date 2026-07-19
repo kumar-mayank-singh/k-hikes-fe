@@ -11,7 +11,6 @@ import { useBookingWizardStore } from "@/store/use-booking-wizard-store";
 import type { PublicEventDetail } from "@/types/bookingConstants";
 
 import { BookingPaymentOverlay } from "./booking-payment-overlay";
-import { ContactStep } from "./contact-step";
 import { DepartureStep } from "./departure-step";
 import { PaymentStep } from "./payment-step";
 import { StepIndicator } from "./wizard-shared";
@@ -34,17 +33,14 @@ export function EventBookingWizard({
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Book {event.name}</DialogTitle>
-            <DialogDescription>
-              Complete your booking in three quick steps.
-            </DialogDescription>
+            <DialogDescription>Complete your booking.</DialogDescription>
           </DialogHeader>
 
           <StepIndicator step={step} />
 
           <div className="pt-4">
-            {step === 0 && <ContactStep />}
-            {step === 1 && <DepartureStep event={event} />}
-            {step === 2 && <PaymentStep event={event} />}
+            {step === 0 && <DepartureStep event={event} />}
+            {step === 1 && <PaymentStep event={event} />}
           </div>
         </DialogContent>
       </Dialog>

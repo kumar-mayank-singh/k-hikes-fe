@@ -6,7 +6,9 @@ import { BookOpen, Eye, Loader2, Plus, XCircle } from "lucide-react";
 import { BookingDetailDialog } from "@/components/admin/bookings/booking-detail-dialog";
 import { ManualBookingForm } from "@/components/admin/bookings/manual-booking-form";
 import { Pagination } from "@/components/components/Pagination";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { useBookingsPage } from "@/hooks/useBookingsPage";
+import { cn } from "@/lib/utils";
 import type { AdminBooking } from "@/types/bookingConstants";
 
 function bookingRowId(b: AdminBooking): string {
@@ -31,12 +33,15 @@ export default function BookingsPage(): ReactElement {
     listParams,
     statusFilter,
     eventFilter,
+    batchIdFilter,
     setPage,
     setPerPage,
     setStatusFilter,
     setEventFilter,
+    setBatchIdFilter,
     bookingsQuery,
     events,
+    batchOptions,
     showManual,
     setShowManual,
     createForm,
@@ -79,22 +84,41 @@ export default function BookingsPage(): ReactElement {
       </div>
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div>
+        <div className="min-w-[220px] max-w-sm flex-1">
           <span className="mb-1 block text-xs font-medium text-gray-600">
-            Event
+            Events
           </span>
-          <select
+          <MultiSelect
+            options={events.map((ev) => ({
+              value: ev.event_id,
+              label: ev.name,
+            }))}
             value={eventFilter}
-            onChange={(e) => setEventFilter(e.target.value)}
-            className="min-w-[200px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-          >
-            <option value="">All events</option>
-            {events.map((ev) => (
-              <option key={ev.event_id} value={ev.event_id}>
-                {ev.name}
-              </option>
-            ))}
-          </select>
+            onChange={setEventFilter}
+            placeholder="All events"
+            emptyMessage="No events"
+          />
+        </div>
+        <div className="min-w-[220px] max-w-sm flex-1">
+          <span className="mb-1 block text-xs font-medium text-gray-600">
+            Batches
+          </span>
+          <MultiSelect
+            options={batchOptions}
+            value={batchIdFilter}
+            onChange={setBatchIdFilter}
+            placeholder={
+              eventFilter.length === 0
+                ? "Select events first"
+                : "All batches"
+            }
+            emptyMessage={
+              eventFilter.length === 0
+                ? "Select events to load batches"
+                : "No batches for selected events"
+            }
+            disabled={eventFilter.length === 0}
+          />
         </div>
         <div className="flex flex-wrap gap-2">
           {["", "confirmed", "pending", "cancelled"].map((s) => (
@@ -102,11 +126,12 @@ export default function BookingsPage(): ReactElement {
               key={s || "all"}
               type="button"
               onClick={() => setStatusFilter(s)}
-              className={`rounded-lg px-3 py-2 text-sm ${
+              className={cn(
+                "rounded-lg px-3 py-2 text-sm",
                 statusFilter === s
                   ? "bg-blue-600 text-white"
-                  : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-              }`}
+                  : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50",
+              )}
             >
               {s === "" ? "All status" : s}
             </button>

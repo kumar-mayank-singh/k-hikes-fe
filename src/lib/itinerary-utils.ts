@@ -7,11 +7,16 @@ export function getItineraryItemId(item: ItineraryDayItem): string {
   return item.id || item.event_itinerary_day_id || "";
 }
 
+interface ItinerarySortable {
+  day_number: number;
+  sort_order: number;
+}
+
 /** Groups items by `day_number`, sorts days ascending; items per day by `sort_order`. */
-export function groupItineraryByDay(
-  items: ItineraryDayItem[],
-): [number, ItineraryDayItem[]][] {
-  const map = new Map<number, ItineraryDayItem[]>();
+export function groupItineraryByDay<T extends ItinerarySortable>(
+  items: T[],
+): [number, T[]][] {
+  const map = new Map<number, T[]>();
   for (const item of items) {
     const day = item.day_number;
     const list = map.get(day);

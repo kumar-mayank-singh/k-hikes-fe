@@ -46,6 +46,7 @@ export interface PublicEventDetail {
   description: string | null;
   cover_image_url: string | null;
   other_photos?: EventOtherPhotosField;
+  itinerary_days: PublicBatchItineraryItem[];
   pdf_url: string | null;
   strike_price: number | null;
   display_price: number | null;
@@ -70,7 +71,6 @@ export interface PublicPriceOption {
   event_price_option_id: string;
   event_id: string;
   batch_id: string | null;
-  batch_size: number | null;
   eligible_for_discounts: boolean;
   is_active: boolean;
   name: string;
@@ -98,12 +98,11 @@ export interface PublicBatch {
   event_id: string;
   nickname: string | null;
   start_date: string;
-  start_time: string;
+  start_time: string | null;
   end_date: string;
-  end_time: string;
+  end_time: string | null;
   is_bookable: boolean;
   is_sold_out: boolean;
-  batch_size: number | null;
   display_price: number | null;
   strike_price: number | null;
   /** True when batch overrides event-level pricing */
@@ -348,9 +347,9 @@ export interface AdminBookingsPaginatedResponse {
 export interface AdminBookingsListParams {
   page: number;
   per_page: number;
-  event_id?: string;
+  event_ids?: string[];
   status?: string;
-  batch_id?: string;
+  batch_ids?: string[];
 }
 
 export type AdminBookingSource = "manual" | "online";

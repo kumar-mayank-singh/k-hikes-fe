@@ -1,6 +1,8 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { useState } from "react";
+import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Download, FileText } from "lucide-react";
@@ -29,6 +31,13 @@ import { leadPdfSchema, type LeadPdfInput } from "@/lib/validation/schema";
 interface EventItineraryDownloadDialogProps {
   eventId: string;
   eventName: string;
+  /**
+   * `true` — download the itinerary PDF (opens `download_url`).
+   * `false` — unlock event details (API still called; `download_url` ignored).
+   */
+  downloadItinerary: boolean;
+  /** Called after a successful submit when `downloadItinerary` is `false`. */
+  onSuccess?: () => void;
 }
 
 const FORM_DEFAULTS: LeadPdfInput = { name: "", phone: "" };
@@ -36,7 +45,9 @@ const FORM_DEFAULTS: LeadPdfInput = { name: "", phone: "" };
 export function EventItineraryDownloadDialog({
   eventId,
   eventName,
-}: EventItineraryDownloadDialogProps): React.ReactElement {
+  downloadItinerary,
+  onSuccess,
+}: EventItineraryDownloadDialogProps): ReactElement {
   const [open, setOpen] = useState<boolean>(false);
   const { mutateAsync, isPending } = useRequestItineraryPdfMutation();
 
@@ -57,15 +68,109 @@ export function EventItineraryDownloadDialog({
       phone: values.phone.trim(),
     });
 
-    if (!res.success || !res.download_url) {
-      toast.error("Could not fetch the itinerary. Please try again.");
+    if (downloadItinerary) {
+      if (!res.success || !res.download_url) {
+        toast.error("Could not fetch the itinerary. Please try again.");
+        return;
+      }
+
+      window.open(res.download_url, "_blank", "noopener,noreferrer");
+      toast.success("Itinerary opened in a new tab.");
+      handleOpenChange(false);
       return;
     }
 
-    window.open(res.download_url, "_blank", "noopener,noreferrer");
-    toast.success("Itinerary opened in a new tab.");
-    handleOpenChange(false);
+    if (!res.success) {
+      toast.error("Could not unlock event details. Please try again.");
+      return;
+    }
+
+    toast.success("Event details unlocked.");
+    onSuccess?.();
+    form.reset(FORM_DEFAULTS);
   };
+
+  if (!downloadItinerary) {
+    return (
+      <section className="bg-white rounded-2xl shadow-sm p-6 border border-stone-100 max-w-md mx-auto w-full">
+        <div className="flex items-start gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+            <FileText className="w-5 h-5 text-emerald-700" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-stone-900">
+              Unlock event details
+            </h2>
+            <p className="text-sm text-stone-500">
+              Share a couple of details to view the full itinerary for{" "}
+              <strong>{eventName}</strong>.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <FieldGroup className="gap-4">
+            <Controller
+              name="name"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="lead-unlock-name">Full name</FieldLabel>
+                  <Input
+                    {...field}
+                    id="lead-unlock-name"
+                    placeholder="e.g. Aditi Rao"
+                    autoComplete="name"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="phone"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="lead-unlock-phone">
+                    Phone number
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    id="lead-unlock-phone"
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="+91 98XXXXXXXX"
+                    autoComplete="tel"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+          </FieldGroup>
+
+          <div className="flex flex-col-reverse sm:flex-row gap-3 mt-6">
+            <Button type="button" variant="outline" asChild className="w-full sm:w-auto">
+              <Link href="/">Back</Link>
+            </Button>
+            <Button
+              type="submit"
+              disabled={isPending || form.formState.isSubmitting}
+              className="bg-emerald-700 text-white hover:bg-emerald-800 w-full sm:flex-1"
+            >
+              {isPending ? "Sending…" : "Continue"}
+            </Button>
+          </div>
+        </form>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-white rounded-2xl shadow-sm p-6 border border-stone-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

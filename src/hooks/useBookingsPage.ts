@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
+  batchKeys,
   useCancelAdminBooking,
   useChangeAdminBookingDate,
   useCreateAdminBooking,
@@ -16,6 +18,7 @@ import {
   useGetPickupPoints,
   useUpdateAdminBooking,
 } from "@/hooks/api/authAPIs";
+import { authApi } from "@/lib/api/auth-client";
 import {
   adminBookingEditSchema,
   changeAdminBookingDateSchema,
@@ -29,6 +32,7 @@ import type {
   AdminBookingsListParams,
   UpdateAdminBookingPersonPayload,
 } from "@/types/bookingConstants";
+import type { Batch, BatchesResponse } from "@/types/eventSubConstants";
 
 const PER_PAGE_OPTIONS = [10, 20, 50] as const;
 
@@ -42,18 +46,28 @@ function detailEventId(detail: AdminBooking | undefined): string {
   return detail.event_id?.trim() || detail.event?.event_id?.trim() || "";
 }
 
+function batchOptionLabel(batch: Batch, eventName?: string): string {
+  const range = batch.start_date
+    ? `${batch.start_date}${batch.end_date ? ` — ${batch.end_date}` : ""}`
+    : batch.batch_id;
+  const nick = batch.nickname?.trim();
+  const base = nick ? `${range} (${nick})` : range;
+  return eventName ? `${eventName}: ${base}` : base;
+}
+
 export interface UseBookingsPageReturn {
   listParams: AdminBookingsListParams;
   statusFilter: string;
-  eventFilter: string;
-  batchIdFilter: string;
+  eventFilter: string[];
+  batchIdFilter: string[];
   setPage: (p: number) => void;
   setPerPage: (n: number) => void;
   setStatusFilter: (s: string) => void;
-  setEventFilter: (id: string) => void;
-  setBatchIdFilter: (id: string) => void;
+  setEventFilter: (ids: string[]) => void;
+  setBatchIdFilter: (ids: string[]) => void;
   bookingsQuery: ReturnType<typeof useGetAdminBookings>;
   events: { event_id: string; name: string }[];
+  batchOptions: { value: string; label: string }[];
   showManual: boolean;
   setShowManual: (v: boolean) => void;
   createForm: ReturnType<typeof useForm<CreateManualAdminBookingParsed>>;
@@ -84,8 +98,8 @@ export function useBookingsPage(): UseBookingsPageReturn {
   const [page, setPageState] = useState(1);
   const [perPage, setPerPageState] = useState<number>(20);
   const [statusFilter, setStatusFilterState] = useState("");
-  const [eventFilter, setEventFilterState] = useState("");
-  const [batchIdFilter, setBatchIdFilterState] = useState("");
+  const [eventFilter, setEventFilterState] = useState<string[]>([]);
+  const [batchIdFilter, setBatchIdFilterState] = useState<string[]>([]);
   const [showManual, setShowManual] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState("");
 
@@ -93,9 +107,9 @@ export function useBookingsPage(): UseBookingsPageReturn {
     () => ({
       page,
       per_page: perPage,
-      event_id: eventFilter || undefined,
+      event_ids: eventFilter.length > 0 ? eventFilter : undefined,
       status: parseListStatus(statusFilter),
-      batch_id: batchIdFilter.trim() || undefined,
+      batch_ids: batchIdFilter.length > 0 ? batchIdFilter : undefined,
     }),
     [page, perPage, eventFilter, statusFilter, batchIdFilter],
   );
@@ -110,6 +124,73 @@ export function useBookingsPage(): UseBookingsPageReturn {
       })),
     [eventsPage],
   );
+
+  const eventNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const ev of events) {
+      map.set(ev.event_id, ev.name);
+    }
+    return map;
+  }, [events]);
+
+  const filterBatchQueries = useQueries({
+    queries: eventFilter.map((eventId) => ({
+      queryKey: batchKeys.all(eventId),
+      queryFn: async (): Promise<Batch[]> => {
+        const res = await authApi.get<BatchesResponse>(
+          `/api/admin/events/${eventId}/batches`,
+        );
+        return res.data.items ?? [];
+      },
+      enabled: !!eventId,
+      staleTime: 2 * 60 * 1000,
+      retry: false,
+    })),
+  });
+
+  const batchOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    const seen = new Set<string>();
+    filterBatchQueries.forEach((q, index) => {
+      const eventId = eventFilter[index];
+      const eventName = eventNameById.get(eventId);
+      for (const batch of q.data ?? []) {
+        if (seen.has(batch.batch_id)) continue;
+        seen.add(batch.batch_id);
+        options.push({
+          value: batch.batch_id,
+          label: batchOptionLabel(batch, eventName),
+        });
+      }
+    });
+    return options;
+  }, [filterBatchQueries, eventFilter, eventNameById]);
+
+  const validBatchIds = useMemo(
+    () => new Set(batchOptions.map((o) => o.value)),
+    [batchOptions],
+  );
+
+  useEffect(() => {
+    const batchesReady =
+      eventFilter.length === 0 ||
+      filterBatchQueries.every((q) => q.isSuccess || q.isError);
+    if (!batchesReady) return;
+
+    setBatchIdFilterState((prev) => {
+      if (eventFilter.length === 0) {
+        return prev.length === 0 ? prev : [];
+      }
+      const next = prev.filter((id) => validBatchIds.has(id));
+      if (
+        next.length === prev.length &&
+        next.every((id, i) => id === prev[i])
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [validBatchIds, eventFilter.length, filterBatchQueries]);
 
   const createForm = useForm<CreateManualAdminBookingParsed>({
     // zod input/output mismatch (coerce + transforms); values at submit match Parsed.
@@ -217,13 +298,13 @@ export function useBookingsPage(): UseBookingsPageReturn {
     setPageState(1);
   }, []);
 
-  const setEventFilter = useCallback((id: string) => {
-    setEventFilterState(id);
+  const setEventFilter = useCallback((ids: string[]) => {
+    setEventFilterState(ids);
     setPageState(1);
   }, []);
 
-  const setBatchIdFilter = useCallback((id: string) => {
-    setBatchIdFilterState(id);
+  const setBatchIdFilter = useCallback((ids: string[]) => {
+    setBatchIdFilterState(ids);
     setPageState(1);
   }, []);
 
@@ -340,6 +421,7 @@ export function useBookingsPage(): UseBookingsPageReturn {
     setBatchIdFilter,
     bookingsQuery,
     events,
+    batchOptions,
     showManual,
     setShowManual,
     createForm,

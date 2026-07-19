@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   Backpack,
@@ -12,17 +11,19 @@ import {
   Mountain,
   XCircle,
 } from "lucide-react";
-
+import { useState } from "react";
 import { EventBookingSidebar } from "@/components/sections/event-booking-sidebar";
 import { EventImageCarousel } from "@/components/sections/event-image-carousel";
-import { getEventGalleryUrls } from "@/lib/event-photos";
+import { EventItineraryDays } from "@/components/sections/event-itinerary-days";
 import { EventItineraryDownloadDialog } from "@/components/sections/event-itinerary-download-dialog";
 import {
   useGetPublicEvent,
   useGetPublicEventPickupPoints,
 } from "@/hooks/api/publicAPIs";
+import { getEventGalleryUrls } from "@/lib/event-photos";
 import { PublicEventDetail } from "@/types/bookingConstants";
 import { PickupPoint } from "@/types/eventSubConstants";
+import { NavBar } from "@/components/layout/NavBar";
 
 export default function EventDetailPage(): React.ReactElement {
   const params = useParams();
@@ -37,6 +38,7 @@ export default function EventDetailPage(): React.ReactElement {
   const { data: pickupPoints = [] } = useGetPublicEventPickupPoints(
     event?.event_id,
   );
+  const [showDetails, setShowDetails] = useState(false);
 
   if (isLoading) {
     return (
@@ -53,9 +55,25 @@ export default function EventDetailPage(): React.ReactElement {
     );
   }
 
+  if (!showDetails) {
+    return (
+      <div className="min-h-screen bg-stone-50">
+        <NavBar activePath="/" />
+        <div className="max-w-6xl mx-auto px-4 py-8 pt-28">
+          <EventItineraryDownloadDialog
+            eventId={event.event_id}
+            eventName={event.name}
+            downloadItinerary={false}
+            onSuccess={() => setShowDetails(true)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-stone-50">
-      <SiteHeader />
+      <NavBar activePath="/" />
 
       <Hero event={event} />
 
@@ -71,12 +89,17 @@ export default function EventDetailPage(): React.ReactElement {
                 body={event.description}
               />
             )}
-
+            
             {event.pdf_url && (
               <EventItineraryDownloadDialog
                 eventId={event.event_id}
+                downloadItinerary={true}
                 eventName={event.name}
               />
+            )}
+
+            {event.itinerary_days?.length > 0 && (
+              <EventItineraryDays items={event.itinerary_days} />
             )}
 
             {pickupPoints.length > 0 && (
@@ -128,47 +151,6 @@ export default function EventDetailPage(): React.ReactElement {
   );
 }
 
-function SiteHeader(): React.ReactElement {
-  return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-stone-900/80 backdrop-blur-xl border-b border-white/5">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-linear-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/30 group-hover:shadow-emerald-500/30 transition-shadow">
-            <Mountain className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="text-lg font-bold tracking-tight text-white">
-              Karnataka Hikes
-            </span>
-            <p className="text-emerald-400 text-[9px] uppercase tracking-[0.2em] font-semibold">
-              Treks & Adventures
-            </p>
-          </div>
-        </Link>
-        <nav className="flex items-center gap-1">
-          <Link
-            href="/"
-            className="px-4 py-2 text-sm text-stone-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-          >
-            Home
-          </Link>
-          <Link
-            href="/about-us"
-            className="px-4 py-2 text-sm text-stone-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-          >
-            About Us
-          </Link>
-          <Link
-            href="/contact-us"
-            className="px-4 py-2 text-sm text-stone-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-          >
-            Contact Us
-          </Link>
-        </nav>
-      </div>
-    </header>
-  );
-}
 
 function Hero({ event }: { event: PublicEventDetail }): React.ReactElement {
   const galleryUrls = getEventGalleryUrls(event);

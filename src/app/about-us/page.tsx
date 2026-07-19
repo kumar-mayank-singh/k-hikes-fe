@@ -3,27 +3,13 @@
 import Link from "next/link";
 import { Mountain, Users, MapPin, Star, Shield, Heart, Compass, TreePine, ArrowRight } from "lucide-react";
 
+import { Footer } from "@/components/layout/Footer";
+import { NavBar } from "@/components/layout/NavBar";
+
 export default function AboutUsPage() {
   return (
     <div className="min-h-screen bg-stone-50">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-stone-900/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-linear-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/30 group-hover:shadow-emerald-500/30 transition-shadow">
-              <img src="/logo.png" alt="Karnataka Hikes" className="w-10 h-10" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-white">Karnataka Hikes</h1>
-              <p className="text-emerald-400 text-[9px] uppercase tracking-[0.2em] font-semibold">Treks & Adventures</p>
-            </div>
-          </Link>
-          <nav className="flex items-center gap-1">
-            <Link href="/" className="px-4 py-2 text-sm text-stone-400 hover:text-white hover:bg-white/5 rounded-lg transition-all">Home</Link>
-            <Link href="/about-us" className="px-4 py-2 text-sm font-medium text-white bg-white/10 rounded-lg">About Us</Link>
-            <Link href="/contact-us" className="px-4 py-2 text-sm text-stone-400 hover:text-white hover:bg-white/5 rounded-lg transition-all">Contact Us</Link>
-          </nav>
-        </div>
-      </header>
+      <NavBar activePath="/about-us" />
 
       <section className="relative min-h-[60vh] flex items-center overflow-hidden hero-gradient">
         <div className="absolute inset-0 bg-grid opacity-20" />
@@ -143,45 +129,7 @@ export default function AboutUsPage() {
         </div>
       </div>
 
-      <footer className="bg-stone-900 text-stone-400 border-t border-stone-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
-          <div className="grid md:grid-cols-3 gap-10">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-linear-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center">
-                  <img src="/logo.png" alt="Karnataka Hikes" className="w-10 h-10" />
-                </div>
-                <div>
-                  <span className="font-bold text-white text-lg">Karnataka Hikes</span>
-                  <p className="text-stone-500 text-xs">Treks & Adventures</p>
-                </div>
-              </div>
-              <p className="text-stone-500 text-sm leading-relaxed">
-                Curated treks and outdoor adventures across India.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Quick Links</h4>
-              <div className="space-y-2">
-                <Link href="/" className="block text-sm hover:text-emerald-400 transition-colors">Home</Link>
-                <Link href="/about-us" className="block text-sm hover:text-emerald-400 transition-colors">About Us</Link>
-                <Link href="/contact-us" className="block text-sm hover:text-emerald-400 transition-colors">Contact Us</Link>
-              </div>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Contact</h4>
-              <div className="space-y-2 text-sm">
-                <p>info@karnatakahikes.com</p>
-                <p>+91 98765 43210</p>
-                <p>Bengaluru, Karnataka</p>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-stone-800 mt-12 pt-6 text-center text-sm text-stone-600">
-            &copy; {new Date().getFullYear()} Karnataka Hikes. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

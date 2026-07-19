@@ -239,8 +239,7 @@ export function PaymentStep({
     };
   }, [initiate.reset]);
 
-  const maxAttendees =
-    selectedBatch?.batch_size ?? event.slots ?? 50;
+  const maxAttendees = event.slots ?? 50;
   const showConfirmPay = initiate.isSuccess && Boolean(initiate.data);
 
   useEffect(() => {
@@ -251,6 +250,7 @@ export function PaymentStep({
   const canBookNow =
     Boolean(batchId) &&
     attendees >= 1 &&
+    (priceOptions.length === 0 || Boolean(priceOptionId)) &&
     !initiate.isPending &&
     !showConfirmPay;
 
@@ -343,10 +343,10 @@ export function PaymentStep({
 
   return (
     <div className="space-y-5">
-      <StepField label="Pricing (optional)">
+      <StepField label="Pricing">
         <p className="text-xs text-stone-500 mb-3">
           {priceOptions.length > 0
-            ? "Pick a ticket rate below. Options are priced per person — set your attendee count below."
+            ? "Select a ticket rate below to continue. Options are priced per person — set your attendee count below."
             : "Standard departure pricing applies, priced per person. Set your attendee count below."}
         </p>
         <div className="space-y-2">

@@ -11,6 +11,7 @@ import {
 import {
   useGetBatches,
   useGetEventDetail,
+  useGetAdminEventPriceOptions,
   useUpdateEvent,
   useEventSubResource,
   useUploadFile,
@@ -29,7 +30,6 @@ interface TicketForm {
   name: string;
   price: string;
   batch_id: string;
-  batch_size: string;
   eligible_for_discounts: boolean;
   is_active: boolean;
 }
@@ -44,7 +44,6 @@ const emptyTicketForm: TicketForm = {
   name: "",
   price: "",
   batch_id: "",
-  batch_size: "",
   eligible_for_discounts: true,
   is_active: true,
 };
@@ -59,8 +58,7 @@ function ticketFormFromItem(opt: PriceOption): TicketForm {
   return {
     name: opt.name,
     price: String(opt.price),
-    batch_id: opt.batch_id ?? "",
-    batch_size: opt.batch_size != null ? String(opt.batch_size) : "",
+    batch_id: opt.batch_ids?.[0] ?? opt.batch_id ?? "",
     eligible_for_discounts: opt.eligible_for_discounts,
     is_active: opt.is_active,
   };
@@ -78,11 +76,16 @@ function ticketFormToPayload(f: TicketForm): Record<string, unknown> {
   return {
     name: f.name,
     price: parseFloat(f.price) || 0,
-    batch_id: f.batch_id.trim() ? f.batch_id : null,
-    batch_size: f.batch_size.trim() ? parseInt(f.batch_size, 10) : null,
+    batch_ids: f.batch_id.trim() ? [f.batch_id.trim()] : [],
     eligible_for_discounts: f.eligible_for_discounts,
     is_active: f.is_active,
   };
+}
+
+function priceOptionBatchIds(opt: PriceOption): string[] {
+  if (opt.batch_ids?.length) return opt.batch_ids;
+  if (opt.batch_id) return [opt.batch_id];
+  return [];
 }
 
 function batchOptionLabel(b: Batch): string {
@@ -131,6 +134,10 @@ export function EventEditPricingSection({
 }): React.ReactElement | null {
   const { data: event } = useGetEventDetail(eventId);
   const { data: batches = [] } = useGetBatches(eventId);
+  const {
+    data: ticketOptions = [],
+    isLoading: isPriceOptionsLoading,
+  } = useGetAdminEventPriceOptions(eventId);
   const updateEvent = useUpdateEvent(eventId);
   const priceOptions = useEventSubResource(eventId, "price-options");
   const addOns = useEventSubResource(eventId, "add-ons");
@@ -242,7 +249,6 @@ export function EventEditPricingSection({
   const isAddOnSaving =
     uploadFile.isPending || addOns.add.isPending || addOns.update.isPending;
 
-  const ticketOptions = event.price_options ?? [];
   const addOnItems = event.add_ons ?? [];
 
   return (
@@ -345,12 +351,17 @@ export function EventEditPricingSection({
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h2 className="font-bold text-gray-900 mb-4">Ticket Options</h2>
 
-        {ticketOptions.length > 0 ? (
+        {isPriceOptionsLoading ? (
+          <p className="text-sm text-gray-500 py-2">Loading ticket options…</p>
+        ) : ticketOptions.length > 0 ? (
           ticketOptions.map((opt) => {
             const id = getItemId(opt);
-            const linkedBatch = opt.batch_id
-              ? batchById.get(opt.batch_id)
-              : null;
+            const linkedIds = priceOptionBatchIds(opt);
+            const linkedBatches = linkedIds
+              .map((batchId) => batchById.get(batchId))
+              .filter((b): b is Batch => b != null);
+            const hasUnknownBatch =
+              linkedIds.length > 0 && linkedBatches.length === 0;
             return (
               <ItemRow
                 key={id}
@@ -364,22 +375,17 @@ export function EventEditPricingSection({
                 <span
                   className={cn(
                     "ml-2 text-xs px-2 py-0.5 rounded-full",
-                    linkedBatch
+                    linkedBatches.length > 0
                       ? "bg-blue-50 text-blue-700"
                       : "bg-gray-100 text-gray-600",
                   )}
                 >
-                  {linkedBatch
-                    ? `Departure: ${batchOptionLabel(linkedBatch)}`
-                    : opt.batch_id
+                  {linkedBatches.length > 0
+                    ? `Departure: ${linkedBatches.map(batchOptionLabel).join(", ")}`
+                    : hasUnknownBatch
                       ? "Departure: unknown"
                       : "All departures"}
                 </span>
-                {opt.batch_size != null && (
-                  <span className="ml-2 text-xs text-gray-500 hidden">
-                    Size: {opt.batch_size}
-                  </span>
-                )}
                 {!opt.is_active && (
                   <span className="ml-2 text-xs text-red-600 font-medium">
                     Inactive
@@ -501,8 +507,11 @@ function TicketOptionFormFields({
   const set = <K extends keyof TicketForm>(k: K, v: TicketForm[K]): void =>
     onChange((f) => ({ ...f, [k]: v }));
 
+  const selectableBatches = batches.filter((b) => b.price_override === true);
+
   const showStaleBatchOption =
-    !!form.batch_id && !batches.some((b) => b.batch_id === form.batch_id);
+    !!form.batch_id &&
+    !selectableBatches.some((b) => b.batch_id === form.batch_id);
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 mt-3 space-y-3">
@@ -537,7 +546,7 @@ function TicketOptionFormFields({
             className={INPUT_CLS}
           >
             <option value="">All departures</option>
-            {batches.map((b) => (
+            {selectableBatches.map((b) => (
               <option key={b.batch_id} value={b.batch_id}>
                 {batchOptionLabel(b)}
               </option>
@@ -548,16 +557,6 @@ function TicketOptionFormFields({
               </option>
             )}
           </select>
-        </div>
-        <div className="hidden" aria-hidden>
-          <label className={LABEL_CLS}>Batch size</label>
-          <input
-            type="number"
-            value={form.batch_size}
-            onChange={(e) => set("batch_size", e.target.value)}
-            className={INPUT_CLS}
-            placeholder="Optional"
-          />
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-5">

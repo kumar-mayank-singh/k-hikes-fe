@@ -6,7 +6,18 @@ import { cn } from "@/lib/utils";
 import type { PublicBatch, PublicEventDetail } from "@/types/bookingConstants";
 import type { WizardStep } from "@/store/use-booking-wizard-store";
 
-export function formatBatchDateTime(date: string, time: string): string {
+export function formatBatchDateTime(
+  date: string,
+  time: string | null | undefined,
+): string {
+  if (!time?.trim()) {
+    const d = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return date;
+    return d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+    });
+  }
   const dt = new Date(`${date}T${time}`);
   if (Number.isNaN(dt.getTime())) return `${date} ${time}`;
   return dt.toLocaleString("en-IN", {
@@ -38,7 +49,7 @@ export function batchEffectivePricing(
   };
 }
 
-const STEP_LABELS = ["Contact", "Departure", "Payment"] as const;
+const STEP_LABELS = ["Departure", "Payment"] as const;
 
 export function StepIndicator({
   step,

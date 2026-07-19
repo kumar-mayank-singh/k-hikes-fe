@@ -45,7 +45,7 @@ export interface PriceOption {
   name: string;
   price: number;
   batch_id: string | null;
-  batch_size: number | null;
+  batch_ids?: string[] | null;
   eligible_for_discounts: boolean;
   is_active: boolean;
 }
@@ -81,15 +81,16 @@ export interface Batch {
   nickname: string | null;
   start_date: string;
   end_date: string;
-  start_time: string;
-  end_time: string;
+  start_time: string | null;
+  end_time: string | null;
   status: BatchStatus;
   is_bookable: boolean;
   is_sold_out: boolean;
-  batch_size: number | null;
   slots_override: number | null;
   display_price: number | null;
   strike_price: number | null;
+  /** True when batch overrides event-level pricing */
+  price_override: boolean;
   google_drive_link: string | null;
   whatsapp_group_link: string | null;
   who_will_go: string | null;
@@ -104,27 +105,28 @@ export interface BatchesResponse {
   items: Batch[];
 }
 
+/** Payload for POST /api/admin/events/{event_id}/batches */
 export interface CreateBatchPayload {
-  batch_size: number | null;
   comment: string | null;
   display_price: number | null;
   end_date: string;
-  end_time: string;
+  end_time: string | null;
   google_drive_link: string | null;
   is_bookable: boolean;
   is_sold_out: boolean;
   nickname: string | null;
+  price_override: boolean;
   slots_override: number | null;
   start_date: string;
-  start_time: string;
+  start_time: string | null;
   status: BatchStatus;
   strike_price: number | null;
   whatsapp_group_link: string | null;
   who_will_go: string | null;
 }
 
+/** Payload for PATCH /api/admin/events/{event_id}/batches/{batch_id} */
 export interface UpdateBatchPayload {
-  batch_size?: number | null;
   comment?: string | null;
   display_price?: number | null;
   end_date?: string | null;
@@ -133,6 +135,7 @@ export interface UpdateBatchPayload {
   is_bookable?: boolean | null;
   is_sold_out?: boolean | null;
   nickname?: string | null;
+  price_override?: boolean | null;
   slots_override?: number | null;
   start_date?: string | null;
   start_time?: string | null;

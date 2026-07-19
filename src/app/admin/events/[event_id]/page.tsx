@@ -158,8 +158,8 @@ export default function EventEditPage() {
   const status = event.is_draft ? "draft" : "live";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="mb-6 flex shrink-0 items-center gap-3">
+    <div className="flex flex-1 flex-col space-y-6">
+      <div className="flex shrink-0 items-center gap-3">
         <Link
           href="/admin/events"
           className="rounded-lg p-2 hover:bg-gray-200"
@@ -179,7 +179,7 @@ export default function EventEditPage() {
         </span>
       </div>
 
-      <div className="mb-6 flex shrink-0 gap-1 overflow-x-auto rounded-lg bg-gray-100 p-1">
+      <div className="flex shrink-0 gap-1 overflow-x-auto rounded-lg bg-gray-100">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -197,7 +197,7 @@ export default function EventEditPage() {
         ))}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div>
       {activeTab === "details" && (
         <EventEditDetailsSection
           categories={categories}

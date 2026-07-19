@@ -4,7 +4,7 @@ import { create } from "zustand";
 
 import type { PaymentType } from "@/types/bookingConstants";
 
-export type WizardStep = 0 | 1 | 2;
+export type WizardStep = 0 | 1;
 
 export interface WizardContact {
   name: string;
@@ -74,7 +74,6 @@ interface BookingWizardActions {
   setStep: (step: WizardStep) => void;
   next: () => void;
   prev: () => void;
-  setContact: (contact: WizardContact) => void;
   update: (patch: Partial<WizardFields>) => void;
   reset: () => void;
   /**
@@ -107,7 +106,7 @@ const INITIAL_STATE: BookingWizardState = {
 };
 
 const clampStep = (n: number): WizardStep =>
-  Math.max(0, Math.min(2, n)) as WizardStep;
+  Math.max(0, Math.min(1, n)) as WizardStep;
 
 export const useBookingWizardStore = create<Store>((set) => ({
   ...INITIAL_STATE,
@@ -121,8 +120,6 @@ export const useBookingWizardStore = create<Store>((set) => ({
   next: () => set((s) => ({ step: clampStep(s.step + 1) })),
 
   prev: () => set((s) => ({ step: clampStep(s.step - 1) })),
-
-  setContact: (contact) => set({ contact }),
 
   update: (patch) => set(patch),
 
